@@ -1,0 +1,527 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Ethanol Oxidation CSTR Extension A</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', 'Roboto', system-ui, sans-serif;
+            background: #0a0f1a;
+            color: #eef2ff;
+            overflow-x: hidden;
+        }
+
+        .app {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .top-bar {
+            background: #0f1422;
+            border-bottom: 2px solid #2a3348;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+        }
+
+        .title-block h1 {
+            font-weight: 500;
+            font-size: 1.4rem;
+            letter-spacing: -0.2px;
+            color: #ccdeff;
+        }
+
+        .title-block p {
+            font-size: 0.7rem;
+            color: #8f9ec2;
+            margin-top: 4px;
+        }
+
+        .info-badge {
+            background: #12182a;
+            padding: 0.3rem 1rem;
+            border: 1px solid #2f3b60;
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: #b7c9f0;
+        }
+
+        .dashboard-main {
+            display: flex;
+            flex: 1;
+            gap: 0;
+        }
+
+        .control-panel {
+            width: 340px;
+            background: #0c1122;
+            border-right: 2px solid #1a2138;
+            padding: 1.5rem 1.2rem;
+            overflow-y: auto;
+            max-height: calc(100vh - 85px);
+        }
+
+        .param-section {
+            margin-bottom: 2rem;
+            border-bottom: 1px solid #1e2740;
+            padding-bottom: 1.2rem;
+        }
+
+        .param-section h3 {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            color: #7e8db0;
+            margin-bottom: 1rem;
+        }
+
+        .slider-item {
+            margin-bottom: 1.2rem;
+        }
+
+        .slider-item label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-bottom: 0.4rem;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            background: #1e2748;
+            height: 4px;
+            border-radius: 0px;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]:focus {
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            width: 14px;
+            height: 14px;
+            background: #5f7fcf;
+            border: none;
+            border-radius: 0px;
+            cursor: pointer;
+        }
+
+        .value-hint {
+            font-size: 0.65rem;
+            color: #6c7ea2;
+            font-family: monospace;
+            margin-top: 4px;
+        }
+
+        .stats-panel {
+            background: #070c19;
+            border: 1px solid #1f2844;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            padding: 0.3rem 0;
+            border-bottom: 1px solid #1a2138;
+        }
+
+        .stat-row strong {
+            font-family: monospace;
+            font-weight: 600;
+            color: #d6e5ff;
+        }
+
+        .optimization-box {
+            background: #0b1020;
+            border-left: 4px solid #5f7fcf;
+            padding: 0.8rem;
+            margin-top: 1rem;
+        }
+
+        .optimization-text {
+            font-size: 0.7rem;
+            margin-top: 6px;
+            color: #a0b4e0;
+        }
+
+        .graph-area {
+            flex: 1;
+            padding: 1rem;
+            background: #0a0f1a;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .graph-row {
+            display: flex;
+            gap: 1rem;
+            flex: 1;
+        }
+
+        .graph-card {
+            background: #101624;
+            border: 1px solid #232d48;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .graph-header {
+            background: #0c1222;
+            padding: 0.6rem 1rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            border-bottom: 1px solid #232d48;
+        }
+
+        .graph-container {
+            flex: 1;
+            min-height: 340px;
+            padding: 0.2rem;
+        }
+
+        @media (max-width: 1000px) {
+            .dashboard-main {
+                flex-direction: column;
+            }
+            .control-panel {
+                width: 100%;
+                border-right: none;
+                border-bottom: 2px solid #1a2138;
+            }
+            .graph-row {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="top-bar">
+        <div class="title-block">
+            <h1>Ethanol Oxidation CSTR Extension A</h1>
+            <p> By Narawizzy </p>
+        </div>
+        <div class="info-badge">V = 10.0 L | A: Ethanol | B: Ethanal | C: Ethanoic Acid</div>
+    </div>
+
+    <div class="dashboard-main">
+        <div class="control-panel">
+            <div class="param-section">
+                <h3>Reactor Parameters</h3>
+                <div class="slider-item">
+                    <label>Residence Time τ <span id="tau_val">9.5</span> s</label>
+                    <input type="range" id="tau_slider" min="1" max="50" step="0.5" value="9.5">
+                    <div class="value-hint">V/Q [s] — optimal for B is ~9-10 seconds</div>
+                </div>
+                <div class="slider-item">
+                    <label>Temperature <span id="temp_val">77</span> °C</label>
+                    <input type="range" id="temp_slider" min="50" max="120" step="1" value="77">
+                    <div class="value-hint">Reactor temperature [°C]</div>
+                </div>
+            </div>
+
+            <div class="param-section">
+                <h3>Kinetic Parameters</h3>
+                <div class="slider-item">
+                    <label>k0₁ (Ethanol → Ethanal) <span id="k01_disp">1.00e7</span> s⁻¹</label>
+                    <input type="range" id="k01_slider" min="1e6" max="5e7" step="1e6" value="1e7">
+                    <div class="value-hint">Pre-exponential factor for reaction 1</div>
+                </div>
+                <div class="slider-item">
+                    <label>k0₂ (Ethanal → Acid) <span id="k02_disp">5.00e6</span> s⁻¹</label>
+                    <input type="range" id="k02_slider" min="1e6" max="5e7" step="1e6" value="5e6">
+                    <div class="value-hint">Pre-exponential factor for reaction 2</div>
+                </div>
+            </div>
+
+            <div class="stats-panel">
+                <div class="stat-row"><span>Ethanol (A)</span><strong id="ca_stat">-- mol/L</strong></div>
+                <div class="stat-row"><span>Ethanal (B) — Intermediate</span><strong id="cb_stat">-- mol/L</strong></div>
+                <div class="stat-row"><span>Ethanoic Acid (C)</span><strong id="cc_stat">-- mol/L</strong></div>
+                <div class="stat-row"><span>Conversion of A</span><strong id="conv_stat">--</strong></div>
+                <div class="stat-row"><span>Yield of B</span><strong id="yield_stat">--</strong></div>
+                <div class="stat-row"><span>Selectivity to B</span><strong id="sel_stat">--</strong></div>
+                <div class="stat-row"><span>Da₁ = k₁τ</span><strong id="da1_stat">--</strong></div>
+                <div class="stat-row"><span>Da₂ = k₂τ</span><strong id="da2_stat">--</strong></div>
+                <div class="stat-row"><span>Ratio Da₂/Da₁</span><strong id="ratio_stat">--</strong></div>
+            </div>
+
+            <div class="optimization-box">
+                <div style="font-size: 0.7rem; font-weight: 600;">Optimization Insight</div>
+                <div id="optimization_text" class="optimization-text">Adjust τ to maximize ethanal (B)</div>
+            </div>
+        </div>
+
+        <div class="graph-area">
+            <div class="graph-row">
+                <div class="graph-card">
+                    <div class="graph-header">1. Concentrations vs. Residence Time (B peaks at optimal τ)</div>
+                    <div id="graph_concentrations" class="graph-container"></div>
+                </div>
+                <div class="graph-card">
+                    <div class="graph-header">2. Yield and Selectivity vs. Residence Time</div>
+                    <div id="graph_yield" class="graph-container"></div>
+                </div>
+            </div>
+            <div class="graph-row">
+                <div class="graph-card">
+                    <div class="graph-header">3. Damköhler Map for Series Reactions (A → B → C)</div>
+                    <div id="graph_damkohler" class="graph-container"></div>
+                </div>
+                <div class="graph-card">
+                    <div class="graph-header">4. Temperature Effect on Ethanal Yield</div>
+                    <div id="graph_temperature" class="graph-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const V = 0.010;                // m³ = 10 L
+    const C_A_in = 2000;            // mol/m³ = 2.0 mol/L
+    const R = 8.314;                // J/mol·K
+    const Ea1 = 50000;              // J/mol
+    const Ea2 = 55000;              // J/mol
+    const Q_base = V / 9.5;         // Reference flow rate
+
+    const tau_slider = document.getElementById('tau_slider');
+    const temp_slider = document.getElementById('temp_slider');
+    const k01_slider = document.getElementById('k01_slider');
+    const k02_slider = document.getElementById('k02_slider');
+
+    const tau_val_span = document.getElementById('tau_val');
+    const temp_val_span = document.getElementById('temp_val');
+    const k01_span = document.getElementById('k01_disp');
+    const k02_span = document.getElementById('k02_disp');
+
+    const ca_stat = document.getElementById('ca_stat');
+    const cb_stat = document.getElementById('cb_stat');
+    const cc_stat = document.getElementById('cc_stat');
+    const conv_stat = document.getElementById('conv_stat');
+    const yield_stat = document.getElementById('yield_stat');
+    const sel_stat = document.getElementById('sel_stat');
+    const da1_stat = document.getElementById('da1_stat');
+    const da2_stat = document.getElementById('da2_stat');
+    const ratio_stat = document.getElementById('ratio_stat');
+    const optimization_text = document.getElementById('optimization_text');
+
+    // Helper: rate constants
+    function k1(T_K, k01_val) {
+        return k01_val * Math.exp(-Ea1 / (R * T_K));
+    }
+
+    function k2(T_K, k02_val) {
+        return k02_val * Math.exp(-Ea2 / (R * T_K));
+    }
+
+    // Solve CSTR mass balances for A, B, C
+    function solveCSTR(tau_val, T_C, k01_val, k02_val) {
+        const T_K = T_C + 273.15;
+        const k1_val = k1(T_K, k01_val);
+        const k2_val = k2(T_K, k02_val);
+        const Q_local = V / tau_val;
+
+        const C_A = C_A_in / (1 + k1_val * tau_val);
+        const C_B = (k1_val * tau_val * C_A) / (1 + k2_val * tau_val);
+        const C_C = k2_val * tau_val * C_B;
+        
+        return { C_A, C_B, C_C, k1_val, k2_val };
+    }
+
+    function getMetrics(C_A, C_B, C_A_in) {
+        const X_A = (C_A_in - C_A) / C_A_in;
+        const Y_B = C_B / C_A_in;
+        const S_B = X_A > 0 ? C_B / (C_A_in - C_A) : 0;
+        return { X_A, Y_B, S_B };
+    }
+
+    function update() {
+        const tau_val = parseFloat(tau_slider.value);
+        const T_C = parseFloat(temp_slider.value);
+        const k01_val = parseFloat(k01_slider.value);
+        const k02_val = parseFloat(k02_slider.value);
+        tau_val_span.innerText = tau_val.toFixed(1);
+        temp_val_span.innerText = T_C;
+        k01_span.innerText = k01_val.toExponential(2);
+        k02_span.innerText = k02_val.toExponential(2);
+
+        // Solve at current operating point
+        const { C_A, C_B, C_C, k1_val, k2_val } = solveCSTR(tau_val, T_C, k01_val, k02_val);
+        const { X_A, Y_B, S_B } = getMetrics(C_A, C_B, C_A_in);
+        
+        const Da1 = k1_val * tau_val;
+        const Da2 = k2_val * tau_val;
+        const ratio = Da2 / Da1;
+
+        // Update stats panel
+        ca_stat.innerText = (C_A / 1000).toFixed(3) + " mol/L";
+        cb_stat.innerText = (C_B / 1000).toFixed(3) + " mol/L";
+        cc_stat.innerText = (C_C / 1000).toFixed(3) + " mol/L";
+        conv_stat.innerText = (X_A * 100).toFixed(1) + "%";
+        yield_stat.innerText = (Y_B * 100).toFixed(1) + "%";
+        sel_stat.innerText = (S_B * 100).toFixed(1) + "%";
+        da1_stat.innerText = Da1.toFixed(3);
+        da2_stat.innerText = Da2.toFixed(3);
+        ratio_stat.innerText = ratio.toFixed(3);
+
+        // Optimization insight
+        if (Da2 > Da1) {
+            optimization_text.innerHTML = "Da₂ > Da₁ : Ethanal reacts faster than it forms. Low B yield. Reduce temperature or adjust kinetics.";
+        } else if (Da1 < 0.5) {
+            optimization_text.innerHTML = "Da₁ < 0.5 : Reaction 1 is slow. Increase τ or temperature to improve conversion.";
+        } else if (ratio < 0.2) {
+            optimization_text.innerHTML = "Da₂/Da₁ = " + ratio.toFixed(3) + " (low). Ethanal accumulates. Good for aldehyde production. Find optimal τ for maximum B.";
+        } else {
+            optimization_text.innerHTML = "Current Da₂/Da₁ = " + ratio.toFixed(3) + ". Adjust τ to maximize B yield.";
+        }
+
+        const tau_sweep = [];
+        const C_A_sweep = [];
+        const C_B_sweep = [];
+        const C_C_sweep = [];
+        
+        for (let t = 1; t <= 50; t += 0.5) {
+            tau_sweep.push(t);
+            const { C_A, C_B, C_C } = solveCSTR(t, T_C, k01_val, k02_val);
+            C_A_sweep.push(C_A / 1000);
+            C_B_sweep.push(C_B / 1000);
+            C_C_sweep.push(C_C / 1000);
+        }
+        
+        // Find optimal τ for maximum B
+        let max_B = 0;
+        let tau_opt = tau_val;
+        for (let i = 0; i < tau_sweep.length; i++) {
+            if (C_B_sweep[i] > max_B) {
+                max_B = C_B_sweep[i];
+                tau_opt = tau_sweep[i];
+            }
+        }
+        
+        Plotly.newPlot('graph_concentrations', [
+            { x: tau_sweep, y: C_A_sweep, mode: 'lines', name: 'Ethanol (A)', line: { color: '#5f8fcf', width: 2.5 } },
+            { x: tau_sweep, y: C_B_sweep, mode: 'lines', name: 'Ethanal (B) - Intermediate', line: { color: '#6fcf97', width: 2.5 } },
+            { x: tau_sweep, y: C_C_sweep, mode: 'lines', name: 'Ethanoic Acid (C)', line: { color: '#e36f5e', width: 2.5 } },
+            { x: [tau_val], y: [C_B/1000], mode: 'markers', name: 'Current Operating Point', marker: { color: '#ffcc77', size: 12, symbol: 'square' } },
+            { x: [tau_opt], y: [max_B], mode: 'markers', name: `Optimal τ = ${tau_opt.toFixed(1)}s`, marker: { color: '#ffaa44', size: 10, symbol: 'circle' } }
+        ], {
+            template: 'plotly_dark',
+            paper_bgcolor: '#101624',
+            plot_bgcolor: '#0a0f1a',
+            xaxis: { title: 'Residence Time τ (s)', range: [0, 50], gridcolor: '#252e44' },
+            yaxis: { title: 'Concentration (mol/L)', gridcolor: '#252e44' },
+            legend: { orientation: 'h', yanchor: 'bottom', y: 1.02, xanchor: 'center', x: 0.5 }
+        }, { responsive: true });
+
+        const X_sweep = [];
+        const Y_sweep = [];
+        const S_sweep = [];
+        
+        for (let t = 1; t <= 50; t += 0.5) {
+            const { C_A, C_B } = solveCSTR(t, T_C, k01_val, k02_val);
+            const { X_A, Y_B, S_B } = getMetrics(C_A, C_B, C_A_in);
+            X_sweep.push(X_A);
+            Y_sweep.push(Y_B);
+            S_sweep.push(S_B);
+        }
+        
+        Plotly.newPlot('graph_yield', [
+            { x: tau_sweep, y: X_sweep, mode: 'lines', name: 'Conversion of A', line: { color: '#5f8fcf', width: 2 } },
+            { x: tau_sweep, y: Y_sweep, mode: 'lines', name: 'Yield of B', line: { color: '#6fcf97', width: 2.5 } },
+            { x: tau_sweep, y: S_sweep, mode: 'lines', name: 'Selectivity to B', line: { color: '#e3a05e', width: 2, dash: 'dash' } },
+            { x: [tau_val], y: [Y_B], mode: 'markers', name: 'Current Yield', marker: { color: '#ffcc77', size: 12, symbol: 'square' } }
+        ], {
+            template: 'plotly_dark',
+            paper_bgcolor: '#101624',
+            plot_bgcolor: '#0a0f1a',
+            xaxis: { title: 'Residence Time τ (s)', range: [0, 50], gridcolor: '#252e44' },
+            yaxis: { title: 'Fraction', range: [0, 1], gridcolor: '#252e44' }
+        }, { responsive: true });
+
+        const Da1_vals = [];
+        const Da2_vals = [];
+        const Y_B_map = [];
+        
+        for (let da1 = 0.1; da1 <= 20; da1 += 0.3) {
+            for (let da2 = 0.05; da2 <= 20; da2 += 0.3) {
+                Da1_vals.push(da1);
+                Da2_vals.push(da2);
+                // Theoretical yield for series reactions in CSTR
+                const Y = da1 / ((1 + da1) * (1 + da2));
+                Y_B_map.push(Y);
+            }
+        }
+        
+        const currentDa1 = Da1;
+        const currentDa2 = Da2;
+        const currentYield = Y_B;
+        
+        Plotly.newPlot('graph_damkohler', [
+            { x: Da1_vals, y: Da2_vals, mode: 'markers', name: 'Da Space', marker: { size: 3, color: Y_B_map, colorscale: 'Viridis', showscale: true, colorbar: { title: 'Yield of B' } }, type: 'scatter' },
+            { x: [currentDa1], y: [currentDa2], mode: 'markers', name: 'Your Design', marker: { color: 'red', size: 14, symbol: 'square' } }
+        ], {
+            template: 'plotly_dark',
+            paper_bgcolor: '#101624',
+            plot_bgcolor: '#0a0f1a',
+            xaxis: { title: 'Da₁ = k₁τ', type: 'log', range: [Math.log10(0.1), Math.log10(20)], gridcolor: '#252e44' },
+            yaxis: { title: 'Da₂ = k₂τ', type: 'log', range: [Math.log10(0.05), Math.log10(20)], gridcolor: '#252e44' },
+            annotations: [
+                { x: 0.3, y: 0.2, text: 'High B Yield Region', showarrow: false, font: { size: 9, color: '#a0f0a0' }, bgcolor: '#1a2138' }
+            ]
+        }, { responsive: true });
+
+        const temp_sweep = [];
+        const Y_temp_sweep = [];
+        
+        for (let Tc = 50; Tc <= 120; Tc += 2) {
+            temp_sweep.push(Tc);
+            const { C_A, C_B } = solveCSTR(tau_val, Tc, k01_val, k02_val);
+            const { Y_B } = getMetrics(C_A, C_B, C_A_in);
+            Y_temp_sweep.push(Y_B);
+        }
+        
+        Plotly.newPlot('graph_temperature', [
+            { x: temp_sweep, y: Y_temp_sweep, mode: 'lines', name: 'Yield of B vs Temperature', line: { color: '#e3a05e', width: 2.5 } },
+            { x: [T_C], y: [Y_B], mode: 'markers', name: 'Current Temperature', marker: { color: '#ffcc77', size: 12, symbol: 'square' } }
+        ], {
+            template: 'plotly_dark',
+            paper_bgcolor: '#101624',
+            plot_bgcolor: '#0a0f1a',
+            xaxis: { title: 'Temperature (°C)', range: [50, 120], gridcolor: '#252e44' },
+            yaxis: { title: 'Yield of B (Ethanal)', range: [0, 1], gridcolor: '#252e44' }
+        }, { responsive: true });
+    }
+
+    // Attach event listeners
+    tau_slider.addEventListener('input', update);
+    temp_slider.addEventListener('input', update);
+    k01_slider.addEventListener('input', update);
+    k02_slider.addEventListener('input', update);
+
+    // Initial load
+    update();
+</script>
+</body>
+</html>

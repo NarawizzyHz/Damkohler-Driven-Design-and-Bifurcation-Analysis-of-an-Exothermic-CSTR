@@ -1,0 +1,588 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>CSTR Simulation</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', 'Roboto', system-ui, sans-serif;
+            background: #0a0f1a;
+            color: #eef2ff;
+            overflow-x: hidden;
+        }
+
+        /* full-page rigid structure */
+        .app {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* top bar - blocky, clean */
+        .top-bar {
+            background: #0f1422;
+            border-bottom: 2px solid #2a3348;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+        }
+        .title-block h1 {
+            font-weight: 500;
+            font-size: 1.5rem;
+            letter-spacing: -0.2px;
+            color: #ccdeff;
+        }
+        .title-block p {
+            font-size: 0.75rem;
+            color: #8f9ec2;
+            margin-top: 4px;
+        }
+        .info-badge {
+            background: #12182a;
+            padding: 0.3rem 1rem;
+            border: 1px solid #2f3b60;
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: #b7c9f0;
+        }
+
+        .dashboard-main {
+            display: flex;
+            flex: 1;
+            gap: 0;
+        }
+
+        .control-panel {
+            width: 340px;
+            background: #0c1122;
+            border-right: 2px solid #1a2138;
+            padding: 1.5rem 1.2rem;
+            overflow-y: auto;
+            max-height: calc(100vh - 85px);
+        }
+        .param-section {
+            margin-bottom: 2rem;
+            border-bottom: 1px solid #1e2740;
+            padding-bottom: 1.2rem;
+        }
+        .param-section h3 {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            color: #7e8db0;
+            margin-bottom: 1rem;
+        }
+        .slider-item {
+            margin-bottom: 1.2rem;
+        }
+        .slider-item label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-bottom: 0.4rem;
+        }
+        input[type="range"] {
+            width: 100%;
+            background: #1e2748;
+            height: 4px;
+            border-radius: 0px;
+            -webkit-appearance: none;
+        }
+        input[type="range"]:focus {
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            width: 14px;
+            height: 14px;
+            background: #5f7fcf;
+            border: none;
+            border-radius: 0px;
+            cursor: pointer;
+        }
+        .value-hint {
+            font-size: 0.65rem;
+            color: #6c7ea2;
+            font-family: monospace;
+            margin-top: 4px;
+        }
+
+        /* result panel */
+        .stats-panel {
+            background: #070c19;
+            border: 1px solid #1f2844;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            padding: 0.3rem 0;
+            border-bottom: 1px solid #1a2138;
+        }
+        .stat-row strong {
+            font-family: monospace;
+            font-weight: 600;
+            color: #d6e5ff;
+        }
+        .warning-box {
+            background: #251a1a;
+            border-left: 4px solid #e09060;
+            padding: 0.7rem;
+            font-size: 0.7rem;
+            margin: 1rem 0;
+            color: #f0bc8c;
+        }
+        .selection-box {
+            background: #0b1020;
+            border-left: 4px solid #5f7fcf;
+            padding: 0.8rem;
+            margin-top: 1rem;
+        }
+        .verdict-text {
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-top: 6px;
+        }
+
+        .graph-area {
+            flex: 1;
+            padding: 1rem;
+            background: #0a0f1a;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .graph-row {
+            display: flex;
+            gap: 1rem;
+            flex: 1;
+        }
+        .graph-card {
+            background: #101624;
+            border: 1px solid #232d48;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .graph-header {
+            background: #0c1222;
+            padding: 0.6rem 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            border-bottom: 1px solid #232d48;
+        }
+        .graph-container {
+            flex: 1;
+            min-height: 340px;
+            padding: 0.2rem;
+        }
+
+        @media (max-width: 1000px) {
+            .dashboard-main {
+                flex-direction: column;
+            }
+            .control-panel {
+                width: 100%;
+                border-right: none;
+                border-bottom: 2px solid #1a2138;
+            }
+            .graph-row {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="top-bar">
+        <div class="title-block">
+            <h1>CSTR SIMULATOR </h1>
+            <p>by Narawizzy</p>
+        </div>
+        <div class="info-badge">V = 10.0 L | UA = 62.8 W/K | base kinetics</div>
+    </div>
+
+    <div class="dashboard-main">
+        <!-- CONTROL PANEL: all adjustable parameters -->
+        <div class="control-panel">
+            <div class="param-section">
+                <h3>OPERATING CONDITIONS</h3>
+                <div class="slider-item">
+                    <label>Residence time τ <span id="tau_val">15.0</span> s</label>
+                    <input type="range" id="tau_slider" min="1" max="90" step="0.5" value="15">
+                    <div class="value-hint">V / Q  [range 1–90 s]</div>
+                </div>
+                <div class="slider-item">
+                    <label>Coolant temperature T_cool <span id="tcool_val">300</span> K</label>
+                    <input type="range" id="tcool_slider" min="270" max="370" step="1" value="300">
+                    <div class="value-hint">jacket coolant inlet [K]</div>
+                </div>
+                <div class="slider-item">
+                    <label>Feed temperature T_in <span id="tin_val">300</span> K</label>
+                    <input type="range" id="tin_slider" min="270" max="370" step="1" value="300">
+                    <div class="value-hint">inlet stream temperature</div>
+                </div>
+            </div>
+
+            <div class="param-section">
+                <h3>KINETICS & THERMODYNAMICS</h3>
+                <div class="slider-item">
+                    <label>k0 (pre-exponential) <span id="k0_disp">1.00e8</span> s⁻¹</label>
+                    <input type="range" id="k0_slider" min="5e6" max="5e8" step="5e6" value="1e8">
+                    <div class="value-hint">Arrhenius frequency factor</div>
+                </div>
+                <div class="slider-item">
+                    <label>Activation energy Ea <span id="ea_disp">40.0</span> kJ/mol</label>
+                    <input type="range" id="ea_slider" min="20" max="85" step="1" value="40">
+                    <div class="value-hint">[kJ/mol]</div>
+                </div>
+                <div class="slider-item">
+                    <label>Heat of reaction ΔH <span id="dh_disp">-80.0</span> kJ/mol</label>
+                    <input type="range" id="dh_slider" min="-130" max="-20" step="2" value="-80">
+                    <div class="value-hint">exothermic (negative)</div>
+                </div>
+            </div>
+
+            <div class="stats-panel">
+                <div class="stat-row"><span>Conversion X</span><strong id="conv_stat">--</strong></div>
+                <div class="stat-row"><span>Exit temperature</span><strong id="texit_stat">-- K (--°C)</strong></div>
+                <div class="stat-row"><span>Exit concentration C_A</span><strong id="ca_stat">-- mol/L</strong></div>
+                <div class="stat-row"><span>Damköhler number Da</span><strong id="da_stat">--</strong></div>
+                <div class="stat-row"><span>Rate constant k(T)</span><strong id="k_stat">-- s⁻¹</strong></div>
+            </div>
+
+            <div id="warning_block" class="warning-box" style="display: none;">
+                THERMAL RUNAWAY RISK: exit temperature exceeds 373 K (100°C). Reduce tau or increase cooling.
+            </div>
+
+            <div class="selection-box">
+                <div style="font-size: 0.7rem; font-weight: 600;">REACTOR SELECTION ADVISOR</div>
+                <div id="advisor_text" style="font-size: 0.7rem; margin-top: 6px;">adjust sliders to evaluate CSTR suitability</div>
+                <div id="advisor_verdict" class="verdict-text">--</div>
+            </div>
+        </div>
+
+        <!-- GRAPH AREA: four high-quality plots -->
+        <div class="graph-area">
+            <div class="graph-row">
+                <div class="graph-card">
+                    <div class="graph-header">HEAT GENERATION vs REMOVAL (full domain)</div>
+                    <div id="graph_heat" class="graph-container"></div>
+                </div>
+                <div class="graph-card">
+                    <div class="graph-header">CONVERSION vs RESIDENCE TIME</div>
+                    <div id="graph_tau" class="graph-container"></div>
+                </div>
+            </div>
+            <div class="graph-row">
+                <div class="graph-card">
+                    <div class="graph-header">CSTR vs PLUG FLOW REACTOR (PFR) PERFORMANCE</div>
+                    <div id="graph_compare" class="graph-container"></div>
+                </div>
+                <div class="graph-card">
+                    <div class="graph-header">DAMKÖHLER MAP & DESIGN GUIDANCE</div>
+                    <div id="graph_da" class="graph-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function(){
+        const V = 0.010;          // m3 (10 L)
+        const C_A_in = 2000;      // mol/m3 = 2.0 mol/L
+        const rho = 1000;         // kg/m3
+        const Cp = 4180;          // J/kg·K
+        const UA_fixed = 62.8;    // W/K from jacket area
+        
+        // DOM elements
+        const tau_slider = document.getElementById('tau_slider');
+        const tcool_slider = document.getElementById('tcool_slider');
+        const tin_slider = document.getElementById('tin_slider');
+        const k0_slider = document.getElementById('k0_slider');
+        const ea_slider = document.getElementById('ea_slider');
+        const dh_slider = document.getElementById('dh_slider');
+        
+        const tau_span = document.getElementById('tau_val');
+        const tcool_span = document.getElementById('tcool_val');
+        const tin_span = document.getElementById('tin_val');
+        const k0_span = document.getElementById('k0_disp');
+        const ea_span = document.getElementById('ea_disp');
+        const dh_span = document.getElementById('dh_disp');
+        
+        // result fields
+        const conv_span = document.getElementById('conv_stat');
+        const texit_span = document.getElementById('texit_stat');
+        const ca_span = document.getElementById('ca_stat');
+        const da_span = document.getElementById('da_stat');
+        const k_span = document.getElementById('k_stat');
+        const warning_div = document.getElementById('warning_block');
+        const advisor_text = document.getElementById('advisor_text');
+        const advisor_verdict = document.getElementById('advisor_verdict');
+        
+        // Helper: Arrhenius
+        function k_rate(T, k0_val, Ea_J) {
+            const R = 8.314;
+            return k0_val * Math.exp(-Ea_J / (R * T));
+        }
+        
+        // Steady-state concentration from mass balance 
+        function C_A_steady(T, tau_val, k0_val, Ea_J) {
+            const k_val = k_rate(T, k0_val, Ea_J);
+            return C_A_in / (1 + k_val * tau_val);
+        }
+        
+        // Heat generation (W)
+        function Q_gen(T, tau_val, k0_val, Ea_J, delta_H_J) {
+            const k_val = k_rate(T, k0_val, Ea_J);
+            const Ca = C_A_steady(T, tau_val, k0_val, Ea_J);
+            return (-delta_H_J) * k_val * Ca * V;
+        }
+        
+        // Heat removal (W)
+        function Q_rem(T, T_cool, T_in, Q_vol, rho, Cp, UA) {
+            const Q_vol_m3 = Q_vol; // m3/s
+            const flow_term = Q_vol_m3 * rho * Cp * (T - T_in);
+            const cooling_term = UA * (T - T_cool);
+            return flow_term + cooling_term;
+        }
+        
+        // Find steady-state temperature via robust scanning 
+        function find_steady_state(tau_val, T_cool, T_in, k0_val, Ea_kJ, delta_H_kJ) {
+            const Ea_J = Ea_kJ * 1000;
+            const delta_H_J = delta_H_kJ * 1000;
+            const Q_vol = 0.001; // m3/s (1 L/s)
+            
+            function residual(T) {
+                const gen = Q_gen(T, tau_val, k0_val, Ea_J, delta_H_J);
+                const rem = Q_rem(T, T_cool, T_in, Q_vol, rho, Cp, UA_fixed);
+                return gen - rem;
+            }
+            
+            let T_low = 270, T_high = 550;
+            let f_low = residual(T_low);
+            let f_high = residual(T_high);
+            
+            if (f_low * f_high > 0) {
+                let best_T = 330;
+                let best_res = Math.abs(residual(330));
+                for (let T = 280; T <= 520; T += 4) {
+                    let res = Math.abs(residual(T));
+                    if (res < best_res) {
+                        best_res = res;
+                        best_T = T;
+                    }
+                }
+                return Math.min(540, Math.max(270, best_T));
+            }
+            
+            for (let iter = 0; iter < 120; iter++) {
+                let T_mid = (T_low + T_high) / 2;
+                let f_mid = residual(T_mid);
+                if (Math.abs(f_mid) < 0.5) return T_mid;
+                if (f_low * f_mid < 0) {
+                    T_high = T_mid;
+                    f_high = f_mid;
+                } else {
+                    T_low = T_mid;
+                    f_low = f_mid;
+                }
+            }
+            return (T_low + T_high) / 2;
+        }
+        
+        // Get current values from UI
+        function getValues() {
+            return {
+                tau: parseFloat(tau_slider.value),
+                T_cool: parseFloat(tcool_slider.value),
+                T_in: parseFloat(tin_slider.value),
+                k0: parseFloat(k0_slider.value),
+                Ea_kJ: parseFloat(ea_slider.value),
+                deltaH_kJ: parseFloat(dh_slider.value)
+            };
+        }
+        
+        function updateUIAndGraphs() {
+            let vals = getValues();
+            const tau_val = vals.tau;
+            const T_cool = vals.T_cool;
+            const T_in = vals.T_in;
+            const k0_val = vals.k0;
+            const Ea_kJ = vals.Ea_kJ;
+            const deltaH_kJ = vals.deltaH_kJ;
+            
+            // display values
+            tau_span.innerText = tau_val.toFixed(1);
+            tcool_span.innerText = T_cool;
+            tin_span.innerText = T_in;
+            k0_span.innerText = k0_val.toExponential(2);
+            ea_span.innerText = Ea_kJ.toFixed(1);
+            dh_span.innerText = deltaH_kJ.toFixed(1);
+            
+            // find steady state
+            const T_ss = find_steady_state(tau_val, T_cool, T_in, k0_val, Ea_kJ, deltaH_kJ);
+            const Ea_J = Ea_kJ * 1000;
+            const deltaH_J = deltaH_kJ * 1000;
+            const k_ss = k_rate(T_ss, k0_val, Ea_J);
+            const C_A_exit = C_A_steady(T_ss, tau_val, k0_val, Ea_J);
+            const X = 1 - C_A_exit / C_A_in;
+            const Da = k_ss * tau_val;
+            
+            conv_span.innerText = (X*100).toFixed(1) + "%";
+            texit_span.innerText = T_ss.toFixed(1) + " K (" + (T_ss-273).toFixed(1) + "°C)";
+            ca_span.innerText = (C_A_exit/1000).toFixed(3) + " mol/L";
+            da_span.innerText = Da.toFixed(3);
+            k_span.innerText = k_ss.toExponential(3) + " s⁻¹";
+            
+            if (T_ss > 373) {
+                warning_div.style.display = "block";
+            } else {
+                warning_div.style.display = "none";
+            }
+            
+            let suitability = "";
+            let verdictMsg = "";
+            if (T_ss > 383) {
+                suitability = "UNSAFE: thermal runaway, high temperature. Increase cooling or reduce tau.";
+                verdictMsg = "CSTR NOT RECOMMENDED under these conditions. Modify parameters.";
+            } else if (X < 0.25) {
+                suitability = "LOW CONVERSION (<25%). Reaction too slow for this residence time.";
+                verdictMsg = "Consider PFR (higher conversion per volume) or increase tau / temperature.";
+            } else if (X > 0.85 && (T_ss - T_in) < 35) {
+                suitability = "EXCELLENT: high conversion with good temperature control.";
+                verdictMsg = "CSTR ideal for this exothermic duty. Design is robust.";
+            } else if (X > 0.70) {
+                suitability = "GOOD: satisfactory conversion, stable thermal behavior.";
+                verdictMsg = "CSTR performs well. Balanced design.";
+            } else if (X > 0.45) {
+                suitability = "MARGINAL: acceptable but room for improvement.";
+                verdictMsg = "Increase tau or adjust T_cool/T_in to boost conversion.";
+            } else {
+                suitability = "POOR: inefficient use of reactor volume.";
+                verdictMsg = "PFR or larger tau recommended for higher single-pass conversion.";
+            }
+            if (Da > 4 && T_ss < 370) verdictMsg += " Da>4 indicates CSTR operates in efficient regime.";
+            if (Da < 0.6) verdictMsg += " Da < 0.6 : PFR would give significantly higher conversion.";
+            
+            advisor_text.innerText = suitability;
+            advisor_verdict.innerText = verdictMsg;
+            
+            const T_range = [];
+            const Qgen_arr = [];
+            const Qrem_arr = [];
+            for (let Tk = 260; Tk <= 560; Tk += 3) {
+                T_range.push(Tk);
+                Qgen_arr.push(Q_gen(Tk, tau_val, k0_val, Ea_J, deltaH_J));
+                Qrem_arr.push(Q_rem(Tk, T_cool, T_in, 0.001, rho, Cp, UA_fixed));
+            }
+            const heatTrace = {
+                x: T_range, y: Qgen_arr, mode: 'lines', name: 'Heat generation Q_gen(T)',
+                line: { color: '#e36f5e', width: 2.5 }
+            };
+            const remTrace = {
+                x: T_range, y: Qrem_arr, mode: 'lines', name: 'Heat removal Q_rem(T)',
+                line: { color: '#5e9bc3', width: 2.5, dash: 'solid' }
+            };
+            const ssMarker = {
+                x: [T_ss], y: [Q_gen(T_ss, tau_val, k0_val, Ea_J, deltaH_J)],
+                mode: 'markers', name: 'Steady state', marker: { color: '#ffcc77', size: 12, symbol: 'square' }
+            };
+            Plotly.newPlot('graph_heat', [heatTrace, remTrace, ssMarker], {
+                template: 'plotly_dark', paper_bgcolor: '#101624', plot_bgcolor: '#0a0f1a',
+                xaxis: { title: 'Temperature (K)', range: [260, 560], gridcolor: '#252e44' },
+                yaxis: { title: 'Heat flow (W)', gridcolor: '#252e44' },
+                legend: { orientation: 'h', yanchor: 'bottom', y: 1.02, xanchor: 'center', x: 0.5 }
+            }, { responsive: true });
+            
+            const tau_scan = [];
+            const X_scan = [];
+            for (let t = 1; t <= 90; t += 1.2) {
+                tau_scan.push(t);
+                const T_temp = find_steady_state(t, T_cool, T_in, k0_val, Ea_kJ, deltaH_kJ);
+                const k_temp = k_rate(T_temp, k0_val, Ea_J);
+                const X_t = (k_temp * t) / (1 + k_temp * t);
+                X_scan.push(X_t);
+            }
+            const tauTrace = {
+                x: tau_scan, y: X_scan, mode: 'lines', name: 'Conversion X(τ)',
+                line: { color: '#6fcf97', width: 2.5 }
+            };
+            const currentPoint = {
+                x: [tau_val], y: [X], mode: 'markers', name: 'current design',
+                marker: { color: '#f5b042', size: 12, symbol: 'square' }
+            };
+            Plotly.newPlot('graph_tau', [tauTrace, currentPoint], {
+                template: 'plotly_dark', paper_bgcolor: '#101624', plot_bgcolor: '#0a0f1a',
+                xaxis: { title: 'Residence time τ (s)', range: [0, 90], gridcolor: '#252e44' },
+                yaxis: { title: 'Conversion X', range: [0, 1], gridcolor: '#252e44' },
+            }, { responsive: true });
+            
+            const tau_comp = [];
+            const X_cstr_arr = [];
+            const X_pfr_arr = [];
+            const k_current = k_rate(T_ss, k0_val, Ea_J);
+            for (let t = 1; t <= 85; t += 1) {
+                tau_comp.push(t);
+                X_cstr_arr.push((k_current * t) / (1 + k_current * t));
+                X_pfr_arr.push(1 - Math.exp(-k_current * t));
+            }
+            const cstrTrace = { x: tau_comp, y: X_cstr_arr, mode: 'lines', name: 'CSTR', line: { color: '#5f8fcf', width: 2.5 } };
+            const pfrTrace = { x: tau_comp, y: X_pfr_arr, mode: 'lines', name: 'PFR (ideal plug flow)', line: { color: '#c0a05e', width: 2.5, dash: 'dash' } };
+            const markerCurr = { x: [tau_val], y: [X], mode: 'markers', name: 'operating point', marker: { color: '#f5b042', size: 11, symbol: 'square' } };
+            Plotly.newPlot('graph_compare', [cstrTrace, pfrTrace, markerCurr], {
+                template: 'plotly_dark', paper_bgcolor: '#101624', plot_bgcolor: '#0a0f1a',
+                xaxis: { title: 'Residence time τ (s)', range: [0, 85], gridcolor: '#252e44' },
+                yaxis: { title: 'Conversion X', range: [0, 1], gridcolor: '#252e44' },
+                annotations: [{ x: 40, y: 0.3, text: 'PFR achieves higher conversion for same τ', showarrow: false, font: { size: 9, color: '#b8c7e7' } }]
+            }, { responsive: true });
+            
+            const Da_vals = [];
+            const X_Da = [];
+            for (let da = 0.05; da <= 45; da += 0.15) {
+                Da_vals.push(da);
+                X_Da.push(da / (1 + da));
+            }
+            const daCurve = { x: Da_vals, y: X_Da, mode: 'lines', name: 'CSTR theoretical curve', line: { color: '#96b8e3', width: 2 } };
+            const currentDaPoint = { x: [Da], y: [X], mode: 'markers', name: `Da = ${Da.toFixed(2)}`, marker: { color: '#ffaa66', size: 14, symbol: 'square' } };
+            const shapes = [
+                { type: 'line', x0: 0.5, x1: 0.5, y0: 0, y1: 1, line: { color: '#e09d5e', width: 1.5, dash: 'dash' } },
+                { type: 'line', x0: 3.5, x1: 3.5, y0: 0, y1: 1, line: { color: '#6fcf97', width: 1.5, dash: 'dash' } }
+            ];
+            const annotations = [
+                { x: 0.25, y: 0.85, text: 'PFR region (Da<0.5)', showarrow: false, font: { size: 9, color: '#e6cfa0' }, bgcolor: '#1a2138', borderpad: 2 },
+                { x: 10, y: 0.85, text: 'CSTR efficient (Da>3.5)', showarrow: false, font: { size: 9, color: '#c2f0c2' }, bgcolor: '#1a2138', borderpad: 2 }
+            ];
+            Plotly.newPlot('graph_da', [daCurve, currentDaPoint], {
+                template: 'plotly_dark', paper_bgcolor: '#101624', plot_bgcolor: '#0a0f1a',
+                xaxis: { title: 'Damköhler number Da = k·τ (log scale)', type: 'log', range: [Math.log10(0.05), Math.log10(45)], gridcolor: '#252e44' },
+                yaxis: { title: 'Conversion X', range: [0, 1], gridcolor: '#252e44' },
+                shapes: shapes, annotations: annotations
+            }, { responsive: true });
+        }
+        
+        // attach events
+        const allSliders = [tau_slider, tcool_slider, tin_slider, k0_slider, ea_slider, dh_slider];
+        allSliders.forEach(sl => sl.addEventListener('input', updateUIAndGraphs));
+        
+        updateUIAndGraphs();
+    })();
+</script>
+</body>
+</html>
